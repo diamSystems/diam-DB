@@ -1,5 +1,5 @@
 Name:           diam-db
-Version:        1.0.0
+Version:        1.0.1
 Release:        1%{?dist}
 Summary:        High-performance memory-first NoSQL micro-database
 License:        BSL

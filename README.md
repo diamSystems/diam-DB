@@ -67,7 +67,7 @@ brew install diam-db
 Download `.deb` from releases and install:
 
 ```bash
-sudo dpkg -i diam-db_1.0.0_amd64.deb
+sudo dpkg -i diam-db_1.0.1_amd64.deb
 ```
 
 #### RPM (Fedora/RHEL)
@@ -75,7 +75,7 @@ sudo dpkg -i diam-db_1.0.0_amd64.deb
 Download `.rpm` from releases and install:
 
 ```bash
-sudo rpm -i diam-db-1.0.0-1.x86_64.rpm
+sudo rpm -i diam-db-1.0.1-1.x86_64.rpm
 ```
 
 ## CLI Usage

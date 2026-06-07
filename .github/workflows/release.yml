@@ -45,6 +45,7 @@ jobs:
             mv target/${{ matrix.target }}/release/diam-db.exe ${{ matrix.artifact }}
           else
             mv target/${{ matrix.target }}/release/diam-db ${{ matrix.artifact }}
+            chmod +x ${{ matrix.artifact }}
           fi
 
       - name: Upload artifact

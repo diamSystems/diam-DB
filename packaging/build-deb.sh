@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-VERSION="1.0.0"
+VERSION="1.0.1"
 PACKAGE_NAME="diam-db"
 ARCH="amd64"
 
