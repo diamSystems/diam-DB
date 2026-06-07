@@ -1,0 +1,12 @@
+Package: diam-db
+Version: 1.0.0
+Section: database
+Priority: optional
+Architecture: amd64
+Maintainer: Zohaib Ismail <zohaib@diamsystems.co.uk>
+License: BUSL-1.1
+Description: High-performance memory-first NoSQL micro-database
+ diamDB is an ultra-lean, high-concurrency, memory-first NoSQL micro-database
+ designed explicitly to bypass traditional file locking issues. Built in Rust
+ using Tokio and Axum, making it incredibly fast with a sub-50MB RAM footprint.
+Depends: libc6

@@ -8,17 +8,119 @@
 - **Append-Only Write Pipeline**: Writes are instantly queued through an asynchronous `tokio::sync::mpsc` channel and flushed to a tenant-specific `transactions.log`. The API responds instantly without waiting for disk sync.
 - **Multi-Tenant Sharding**: Data is siloed cleanly into `Database-per-Tenant` folders to ensure absolute data isolation.
 - **Auto-Compaction**: Background workers periodically compact the `transactions.log` into a compiled `data.json` state map without blocking your API traffic.
+- **Cross-Platform**: Available for macOS, Linux, and Windows with easy CLI provisioning.
+
+## Installation
+
+### Pre-built Binaries
+
+Download the latest release for your platform from the [GitHub Releases](https://github.com/diamSystems/diam-DB/releases) page.
+
+#### Quick Install (Linux/macOS)
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/diamSystems/diam-DB/main/install.sh | bash
+```
+
+#### Manual Install
+
+```bash
+# macOS (Apple Silicon)
+curl -L -o diam-db https://github.com/diamSystems/diam-DB/releases/latest/download/diam-db-macos-arm64
+chmod +x diam-db
+sudo mv diam-db /usr/local/bin/
+
+# macOS (Intel)
+curl -L -o diam-db https://github.com/diamSystems/diam-DB/releases/latest/download/diam-db-macos-x86_64
+chmod +x diam-db
+sudo mv diam-db /usr/local/bin/
+
+# Linux
+curl -L -o diam-db https://github.com/diamSystems/diam-DB/releases/latest/download/diam-db-linux-x86_64
+chmod +x diam-db
+sudo mv diam-db /usr/local/bin/
+
+# Windows
+# Download diam-db-windows-x86_64.exe from releases
+```
+
+### Build from Source
+
+```bash
+git clone https://github.com/diamSystems/diam-DB.git
+cd diamDB
+cargo build --release
+cargo install --path .
+```
+
+### Package Managers
+
+#### Homebrew (macOS/Linux)
+
+```bash
+brew tap diamSystems/diam-DB
+brew install diam-db
+```
+
+#### DEB (Debian/Ubuntu)
+
+Download `.deb` from releases and install:
+
+```bash
+sudo dpkg -i diam-db_1.0.0_amd64.deb
+```
+
+#### RPM (Fedora/RHEL)
+
+Download `.rpm` from releases and install:
+
+```bash
+sudo rpm -i diam-db-1.0.0-1.x86_64.rpm
+```
+
+## CLI Usage
+
+### Start the Server
+
+```bash
+# Default: 127.0.0.1:8080
+diam-db server
+
+# Custom host and port
+diam-db server --host 0.0.0.0 --port 3000
+
+# Custom data directory
+diam-db server --data-dir /var/lib/diamdb
+```
+
+### Create a Tenant
+
+```bash
+# Create a new tenant database
+diam-db create-tenant my_tenant
+
+# With custom data directory
+diam-db create-tenant my_tenant --data-dir /var/lib/diamdb
+```
+
+### Help
+
+```bash
+diam-db --help
+diam-db server --help
+diam-db create-tenant --help
+```
 
 ## Getting Started
 
 ### Prerequisites
-- Rust and Cargo (version 1.70 or higher recommended)
+- Rust and Cargo (version 1.70 or higher recommended) - only if building from source
 
 ### Build and Run
 
 Clone the repository and run:
 ```bash
-cargo run --release
+cargo run --release -- server
 ```
 
 The database will start on `127.0.0.1:8080` by default. Data is persisted in the `./data` folder in your project root.

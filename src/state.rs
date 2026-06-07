@@ -108,4 +108,32 @@ impl DbState {
         }
         Ok(())
     }
+
+    pub async fn create_tenant(&self, tenant_id: &str) {
+        if self.tenants.contains_key(tenant_id) {
+            println!("Tenant '{}' already exists", tenant_id);
+            return;
+        }
+
+        let tenant_dir = self.base_path.join(tenant_id);
+        fs::create_dir_all(&tenant_dir).await.unwrap();
+
+        let data: TenantData = HashMap::new();
+        let data = Arc::new(RwLock::new(data));
+        let (tx, rx) = mpsc::channel(1024);
+
+        tokio::spawn(spawn_tenant_worker(
+            tenant_id.to_string(),
+            self.base_path.clone(),
+            data.clone(),
+            rx,
+        ));
+
+        let tenant = Arc::new(Tenant {
+            id: tenant_id.to_string(),
+            data,
+            tx,
+        });
+        self.tenants.insert(tenant_id.to_string(), tenant);
+    }
 }

@@ -121,3 +121,24 @@ pub async fn get_document(
         None => (StatusCode::NOT_FOUND, "Document not found").into_response(),
     }
 }
+
+pub async fn get_tenant_stats(
+    State(state): State<Arc<DbState>>,
+    Path(tenant_id): Path<String>,
+) -> impl IntoResponse {
+    let tenant = match state.tenants.get(&tenant_id) {
+        Some(t) => t.clone(),
+        None => return (StatusCode::NOT_FOUND, "Tenant not found").into_response(),
+    };
+
+    let read_lock = tenant.data.read().await;
+    let collections = read_lock.len();
+    let total_documents: usize = read_lock.values().map(|c| c.len()).sum();
+
+    let stats = serde_json::json!({
+        "collections": collections,
+        "total_documents": total_documents,
+    });
+
+    (StatusCode::OK, Json(stats)).into_response()
+}
