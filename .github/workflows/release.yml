@@ -86,8 +86,8 @@ jobs:
           context: .
           push: true
           tags: |
-            ghcr.io/${{ github.repository }}:latest
-            ghcr.io/${{ github.repository }}:${{ steps.version.outputs.VERSION }}
+            ghcr.io/${{ github.repository_owner }}/diam-db:latest
+            ghcr.io/${{ github.repository_owner }}/diam-db:${{ steps.version.outputs.VERSION }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -123,8 +123,8 @@ jobs:
             ## Docker Image
             
             ```bash
-            docker pull ghcr.io/${{ github.repository }}:latest
-            docker run -p 8080:8080 -v $(pwd)/data:/data ghcr.io/${{ github.repository }}:latest
+            docker pull ghcr.io/${{ github.repository_owner }}/diam-db:latest
+            docker run -p 8080:8080 -v $(pwd)/data:/data ghcr.io/${{ github.repository_owner }}/diam-db:latest
             ```
             
             ## Binary Downloads
