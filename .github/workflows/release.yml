@@ -80,14 +80,18 @@ jobs:
         id: version
         run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
 
+      - name: Set lowercase repository owner
+        id: repo
+        run: echo "OWNER=$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
+
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
           context: .
           push: true
           tags: |
-            ghcr.io/${{ lowercase(github.repository_owner) }}/diam-db:latest
-            ghcr.io/${{ lowercase(github.repository_owner) }}/diam-db:${{ steps.version.outputs.VERSION }}
+            ghcr.io/${{ steps.repo.outputs.OWNER }}/diam-db:latest
+            ghcr.io/${{ steps.repo.outputs.OWNER }}/diam-db:${{ steps.version.outputs.VERSION }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -111,6 +115,10 @@ jobs:
         run: |
           ls -R artifacts
 
+      - name: Set lowercase repository owner
+        id: repo
+        run: echo "OWNER=$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
+
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
@@ -121,10 +129,10 @@ jobs:
             artifacts/diam-db-windows-x86_64.exe/diam-db-windows-x86_64.exe
           body: |
             ## Docker Image
-            
+
             ```bash
-            docker pull ghcr.io/${{ lowercase(github.repository_owner) }}/diam-db:latest
-            docker run -p 8080:8080 -v $(pwd)/data:/data ghcr.io/${{ lowercase(github.repository_owner) }}/diam-db:latest
+            docker pull ghcr.io/${{ steps.repo.outputs.OWNER }}/diam-db:latest
+            docker run -p 8080:8080 -v $(pwd)/data:/data ghcr.io/${{ steps.repo.outputs.OWNER }}/diam-db:latest
             ```
             
             ## Binary Downloads
