@@ -19,11 +19,55 @@ pub struct CreateTenantRequest {
     pub tenant_id: String,
 }
 
+/// Validate a tenant or collection identifier.
+///
+/// Defense-in-depth: identifiers are used to build filesystem paths, so we
+/// reject anything that could be used for path traversal or that contains
+/// characters outside a safe allowlist. Returns `Err(message)` when invalid.
+pub fn validate_identifier(value: &str) -> Result<(), &'static str> {
+    if value.is_empty() {
+        return Err("identifier must not be empty");
+    }
+    if value.len() > 64 {
+        return Err("identifier must be at most 64 characters");
+    }
+    if value.contains('/')
+        || value.contains('\\')
+        || value.contains("..")
+        || value.contains('\0')
+    {
+        return Err("identifier contains forbidden characters");
+    }
+    if !value
+        .chars()
+        .all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-')
+    {
+        return Err("identifier contains invalid characters");
+    }
+    Ok(())
+}
+
+/// Lightweight liveness/readiness probe (no auth, used by Docker HEALTHCHECK).
+pub async fn health() -> impl IntoResponse {
+    (
+        StatusCode::OK,
+        Json(serde_json::json!({
+            "status": "healthy",
+            "service": "diam-db",
+            "version": env!("CARGO_PKG_VERSION"),
+        })),
+    )
+        .into_response()
+}
+
 pub async fn create_tenant(
     State(state): State<Arc<DbState>>,
     Json(payload): Json<CreateTenantRequest>,
 ) -> impl IntoResponse {
     let tenant_id = payload.tenant_id;
+    if let Err(msg) = validate_identifier(&tenant_id) {
+        return (StatusCode::BAD_REQUEST, msg).into_response();
+    }
     if state.tenants.contains_key(&tenant_id) {
         return (StatusCode::CONFLICT, "Tenant already exists").into_response();
     }
@@ -54,6 +98,12 @@ pub async fn write_document(
     Path((tenant_id, collection_name)): Path<(String, String)>,
     Json(mut payload): Json<Value>,
 ) -> impl IntoResponse {
+    if let Err(msg) = validate_identifier(&tenant_id) {
+        return (StatusCode::BAD_REQUEST, msg).into_response();
+    }
+    if let Err(msg) = validate_identifier(&collection_name) {
+        return (StatusCode::BAD_REQUEST, msg).into_response();
+    }
     let tenant = match state.tenants.get(&tenant_id) {
         Some(t) => t.clone(),
         None => return (StatusCode::NOT_FOUND, "Tenant not found").into_response(),
@@ -94,6 +144,12 @@ pub async fn get_collection(
     State(state): State<Arc<DbState>>,
     Path((tenant_id, collection_name)): Path<(String, String)>,
 ) -> impl IntoResponse {
+    if let Err(msg) = validate_identifier(&tenant_id) {
+        return (StatusCode::BAD_REQUEST, msg).into_response();
+    }
+    if let Err(msg) = validate_identifier(&collection_name) {
+        return (StatusCode::BAD_REQUEST, msg).into_response();
+    }
     let tenant = match state.tenants.get(&tenant_id) {
         Some(t) => t.clone(),
         None => return (StatusCode::NOT_FOUND, "Tenant not found").into_response(),
@@ -110,6 +166,12 @@ pub async fn get_document(
     State(state): State<Arc<DbState>>,
     Path((tenant_id, collection_name, document_id)): Path<(String, String, String)>,
 ) -> impl IntoResponse {
+    if let Err(msg) = validate_identifier(&tenant_id) {
+        return (StatusCode::BAD_REQUEST, msg).into_response();
+    }
+    if let Err(msg) = validate_identifier(&collection_name) {
+        return (StatusCode::BAD_REQUEST, msg).into_response();
+    }
     let tenant = match state.tenants.get(&tenant_id) {
         Some(t) => t.clone(),
         None => return (StatusCode::NOT_FOUND, "Tenant not found").into_response(),
@@ -126,6 +188,9 @@ pub async fn get_tenant_stats(
     State(state): State<Arc<DbState>>,
     Path(tenant_id): Path<String>,
 ) -> impl IntoResponse {
+    if let Err(msg) = validate_identifier(&tenant_id) {
+        return (StatusCode::BAD_REQUEST, msg).into_response();
+    }
     let tenant = match state.tenants.get(&tenant_id) {
         Some(t) => t.clone(),
         None => return (StatusCode::NOT_FOUND, "Tenant not found").into_response(),

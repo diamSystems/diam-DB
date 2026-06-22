@@ -223,6 +223,17 @@
         let currentToken = null;
         let currentUser = null;
 
+        // Escape HTML to prevent XSS when injecting API/user content via innerHTML.
+        function escapeHtml(value) {
+            if (value === null || value === undefined) return '';
+            return String(value)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
         // Tab Navigation
         function showTab(tabId) {
             document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
@@ -252,12 +263,12 @@
                     <span class="text-sm text-green-400">Connected</span>
                 `;
                 document.getElementById('gatewayInfo').innerHTML = `
-                    <p><strong>Service:</strong> ${data.service}</p>
-                    <p><strong>Version:</strong> ${data.version}</p>
-                    <p><strong>Authentication:</strong> ${data.security?.authentication}</p>
-                    <p><strong>Authorization:</strong> ${data.security?.authorization}</p>
-                    <p><strong>Rate Limiting:</strong> ${data.security?.rate_limiting}</p>
-                    <p><strong>Audit Logging:</strong> ${data.security?.audit_logging}</p>
+                    <p><strong>Service:</strong> ${escapeHtml(data.service)}</p>
+                    <p><strong>Version:</strong> ${escapeHtml(data.version)}</p>
+                    <p><strong>Authentication:</strong> ${escapeHtml(data.security?.authentication)}</p>
+                    <p><strong>Authorization:</strong> ${escapeHtml(data.security?.authorization)}</p>
+                    <p><strong>Rate Limiting:</strong> ${escapeHtml(data.security?.rate_limiting)}</p>
+                    <p><strong>Audit Logging:</strong> ${escapeHtml(data.security?.audit_logging)}</p>
                 `;
             } catch (e) {
                 document.getElementById('connectionStatus').innerHTML = `
@@ -273,7 +284,7 @@
             const result = await apiCall('/health');
             const div = document.getElementById('healthResult');
             if (result.status === 200) {
-                div.innerHTML = `<div class="text-green-400">✓ Healthy - Engine: ${result.data.diamdb_engine}</div>`;
+                div.innerHTML = `<div class="text-green-400">✓ Healthy - Engine: ${escapeHtml(result.data.diamdb_engine)}</div>`;
             } else {
                 div.innerHTML = `<div class="text-red-400">✗ Health check failed</div>`;
             }
@@ -291,10 +302,10 @@
             const div = document.getElementById('registerResult');
             if (result.status === 201) {
                 div.innerHTML = `<div class="text-green-400">✓ Registered successfully</div>
-                    <div class="text-sm text-gray-400 mt-2">API Key: <code class="bg-gray-700 px-2 py-1 rounded">${result.data.api_key}</code></div>
-                    <div class="text-sm text-yellow-400 mt-1">${result.data.warning}</div>`;
+                    <div class="text-sm text-gray-400 mt-2">API Key: <code class="bg-gray-700 px-2 py-1 rounded">${escapeHtml(result.data.api_key)}</code></div>
+                    <div class="text-sm text-yellow-400 mt-1">${escapeHtml(result.data.warning)}</div>`;
             } else {
-                div.innerHTML = `<div class="text-red-400">✗ ${result.data.error}</div>`;
+                div.innerHTML = `<div class="text-red-400">✗ ${escapeHtml(result.data.error)}</div>`;
             }
         }
 
@@ -316,7 +327,7 @@
                 updateSessionInfo();
                 div.innerHTML = `<div class="text-green-400">✓ Logged in successfully</div>`;
             } else {
-                div.innerHTML = `<div class="text-red-400">✗ ${result.data.error}</div>`;
+                div.innerHTML = `<div class="text-red-400">✗ ${escapeHtml(result.data.error)}</div>`;
             }
         }
 
@@ -333,7 +344,7 @@
         function updateSessionInfo() {
             const div = document.getElementById('sessionInfo');
             if (currentUser) {
-                div.innerHTML = `<p><strong>User:</strong> ${currentUser}</p>
+                div.innerHTML = `<p><strong>User:</strong> ${escapeHtml(currentUser)}</p>
                     <p><strong>Token:</strong> ${currentToken ? 'Set' : 'Not set'}</p>`;
             } else {
                 div.innerHTML = '<p>No active session</p>';
@@ -350,9 +361,9 @@
             });
             const div = document.getElementById('tenantResult');
             if (result.status === 201) {
-                div.innerHTML = `<div class="text-green-400">✓ ${result.data.message}</div>`;
+                div.innerHTML = `<div class="text-green-400">✓ ${escapeHtml(result.data.message)}</div>`;
             } else {
-                div.innerHTML = `<div class="text-red-400">✗ ${result.data.error}</div>`;
+                div.innerHTML = `<div class="text-red-400">✗ ${escapeHtml(result.data.error)}</div>`;
             }
         }
 
@@ -374,10 +385,10 @@
                 body: JSON.stringify(data)
             });
             const div = document.getElementById('writeResult');
-            if (result.status === 201) {
-                div.innerHTML = `<div class="text-green-400">✓ ${result.data.message}</div>`;
+            if (result.status === 200 || result.status === 201) {
+                div.innerHTML = `<div class="text-green-400">✓ ${escapeHtml(result.data.message || 'Document written')}</div>`;
             } else {
-                div.innerHTML = `<div class="text-red-400">✗ ${result.data.error}</div>`;
+                div.innerHTML = `<div class="text-red-400">✗ ${escapeHtml(result.data.error)}</div>`;
             }
         }
 
@@ -390,9 +401,9 @@
             const div = document.getElementById('readResult');
             if (result.status === 200) {
                 div.innerHTML = `<div class="text-green-400">✓ Collection data:</div>
-                    <pre class="bg-gray-900 p-4 rounded mt-2 text-sm overflow-auto max-h-64">${JSON.stringify(result.data, null, 2)}</pre>`;
+                    <pre class="bg-gray-900 p-4 rounded mt-2 text-sm overflow-auto max-h-64">${escapeHtml(JSON.stringify(result.data, null, 2))}</pre>`;
             } else {
-                div.innerHTML = `<div class="text-red-400">✗ ${result.data.error}</div>`;
+                div.innerHTML = `<div class="text-red-400">✗ ${escapeHtml(result.data.error)}</div>`;
             }
         }
 

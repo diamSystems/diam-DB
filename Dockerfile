@@ -15,9 +15,10 @@ RUN cargo build --release --target x86_64-unknown-linux-gnu
 # Runtime stage
 FROM debian:bookworm-slim
 
-# Install dependencies
+# Install dependencies (curl is required by the HEALTHCHECK below)
 RUN apt-get update && apt-get install -y \
     ca-certificates \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
 # Set working directory
@@ -37,7 +38,7 @@ ENV DIAMDB_DATA_DIR=/data
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:8080/api/v1/database/create || exit 1
+    CMD curl -f http://localhost:8080/health || exit 1
 
 # Run the server
 CMD ["./diam-db", "server", "--host", "0.0.0.0", "--port", "8080", "--data-dir", "/data"]
