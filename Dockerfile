@@ -3,14 +3,11 @@ FROM rust:1.96-slim as builder
 
 WORKDIR /app
 
-# Set target to Linux
-ENV CARGO_TARGET=x86_64-unknown-linux-gnu
-
 # Copy source
 COPY . .
 
-# Build the release binary for Linux
-RUN cargo build --release --target x86_64-unknown-linux-gnu
+# Build the release binary (native Linux target)
+RUN cargo build --release
 
 # Runtime stage
 FROM debian:bookworm-slim
@@ -25,7 +22,7 @@ RUN apt-get update && apt-get install -y \
 WORKDIR /app
 
 # Copy binary from builder
-COPY --from=builder /app/target/x86_64-unknown-linux-gnu/release/diam-db /app/diam-db
+COPY --from=builder /app/target/release/diam-db /app/diam-db
 
 # Create data directory
 RUN mkdir -p /data
