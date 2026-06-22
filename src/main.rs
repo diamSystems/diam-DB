@@ -25,7 +25,7 @@ enum Commands {
     /// Start the database server
     Server {
         /// Host to bind to (default: 127.0.0.1)
-        #[arg(short, long, default_value = "127.0.0.1")]
+        #[arg(long, default_value = "127.0.0.1")]
         host: String,
         /// Port to bind to (default: 8080)
         #[arg(short, long, default_value = "8080")]
@@ -54,6 +54,8 @@ async fn main() {
             let state = Arc::new(DbState::init(base_path).await);
 
             let app = Router::new()
+                .route("/health", get(api::health))
+                .route("/api/v1/health", get(api::health))
                 .route("/api/v1/database/create", post(api::create_tenant))
                 .route(
                     "/api/v1/:tenant_id/collection/:collection_name",

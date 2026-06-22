@@ -1,0 +1,11 @@
+target/
+.git/
+.gitignore
+.github/
+Dockerfile
+.dockerignore
+*.md
+packaging/
+homebrew/
+data/
+.cargo/

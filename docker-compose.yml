@@ -1,0 +1,19 @@
+version: '3.8'
+
+services:
+  diam-db:
+    build: .
+    container_name: diam-db
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./data:/data
+    environment:
+      - DIAMDB_DATA_DIR=/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/api/v1/database/create"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s

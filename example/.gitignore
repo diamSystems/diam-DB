@@ -1,0 +1,14 @@
+# Local development databases (contain password/API-key hashes & audit logs)
+*.db
+users.db
+audit.db
+
+# Python cache
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Virtual environments
+.venv/
+venv/
+env/
