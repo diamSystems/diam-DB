@@ -95,6 +95,10 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+      - name: Make package public
+        run: |
+          gh api /orgs/${{ github.repository_owner }}/packages/container/diam-db --method PATCH -f visibility=public
+
   release:
     name: Create Release
     needs: [build, docker]
