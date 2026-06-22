@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>diam-DB Security Test UI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .nav-tab.active { border-bottom: 2px solid #6366f1; color: #6366f1; }
+        .status-pass { color: #16a34a; }
+        .status-fail { color: #dc2626; }
+        .status-blocked { color: #dc2626; }
+        .status-allowed { color: #16a34a; }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-100 min-h-screen">
+    <div class="max-w-6xl mx-auto p-6">
+        <!-- Header -->
+        <header class="mb-8">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-3xl font-bold text-white">diam-DB</h1>
+                    <p class="text-gray-400">Enterprise Security Gateway Test UI</p>
+                </div>
+                <div id="connectionStatus" class="flex items-center gap-2">
+                    <span class="w-3 h-3 rounded-full bg-yellow-500 animate-pulse"></span>
+                    <span class="text-sm text-gray-400">Checking...</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Navigation -->
+        <nav class="mb-6 border-b border-gray-700">
+            <div class="flex gap-6">
+                <button onclick="showTab('landing')" class="nav-tab active px-4 py-3 text-gray-300 hover:text-white transition" data-tab="landing">Landing</button>
+                <button onclick="showTab('auth')" class="nav-tab px-4 py-3 text-gray-300 hover:text-white transition" data-tab="auth">Auth</button>
+                <button onclick="showTab('dashboard')" class="nav-tab px-4 py-3 text-gray-300 hover:text-white transition" data-tab="dashboard">Dashboard</button>
+                <button onclick="showTab('security')" class="nav-tab px-4 py-3 text-gray-300 hover:text-white transition" data-tab="security">Security Tests</button>
+            </div>
+        </nav>
+
+        <!-- Landing Tab -->
+        <div id="landing" class="tab-content active">
+            <div class="bg-gray-800 rounded-lg p-6 mb-6">
+                <h2 class="text-xl font-semibold mb-4">Gateway Information</h2>
+                <div id="gatewayInfo" class="space-y-2 text-gray-300">
+                    <p>Loading gateway info...</p>
+                </div>
+            </div>
+
+            <div class="bg-gray-800 rounded-lg p-6">
+                <h2 class="text-xl font-semibold mb-4">Health Check</h2>
+                <button onclick="checkHealth()" class="bg-indigo-600 hover:bg-indigo-700 px-4 py-2 rounded transition">Check Health</button>
+                <div id="healthResult" class="mt-4"></div>
+            </div>
+        </div>
+
+        <!-- Auth Tab -->
+        <div id="auth" class="tab-content">
+            <div class="grid md:grid-cols-2 gap-6">
+                <!-- Register -->
+                <div class="bg-gray-800 rounded-lg p-6">
+                    <h2 class="text-xl font-semibold mb-4">Register</h2>
+                    <form onsubmit="register(event)" class="space-y-4">
+                        <div>
+                            <label class="block text-sm text-gray-400 mb-1">Email</label>
+                            <input type="email" id="regEmail" required class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-indigo-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm text-gray-400 mb-1">Password (min 12 chars, uppercase, lowercase, digit, special)</label>
+                            <input type="password" id="regPassword" required class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-indigo-500">
+                        </div>
+                        <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 px-4 py-2 rounded transition">Register</button>
+                    </form>
+                    <div id="registerResult" class="mt-4"></div>
+                </div>
+
+                <!-- Login -->
+                <div class="bg-gray-800 rounded-lg p-6">
+                    <h2 class="text-xl font-semibold mb-4">Login</h2>
+                    <form onsubmit="login(event)" class="space-y-4">
+                        <div>
+                            <label class="block text-sm text-gray-400 mb-1">Email</label>
+                            <input type="email" id="loginEmail" required class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-indigo-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm text-gray-400 mb-1">Password</label>
+                            <input type="password" id="loginPassword" required class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-indigo-500">
+                        </div>
+                        <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 px-4 py-2 rounded transition">Login</button>
+                    </form>
+                    <div id="loginResult" class="mt-4"></div>
+                </div>
+            </div>
+
+            <!-- Current Session -->
+            <div class="bg-gray-800 rounded-lg p-6 mt-6">
+                <h2 class="text-xl font-semibold mb-4">Current Session</h2>
+                <div id="sessionInfo" class="text-gray-300">
+                    <p>No active session</p>
+                </div>
+                <button onclick="logout()" class="mt-4 bg-red-600 hover:bg-red-700 px-4 py-2 rounded transition">Logout</button>
+            </div>
+        </div>
+
+        <!-- Dashboard Tab -->
+        <div id="dashboard" class="tab-content">
+            <div class="bg-gray-800 rounded-lg p-6 mb-6">
+                <h2 class="text-xl font-semibold mb-4">Create Tenant</h2>
+                <form onsubmit="createTenant(event)" class="flex gap-4">
+                    <input type="text" id="tenantId" placeholder="Tenant ID (e.g., my_company)" required class="flex-1 bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-indigo-500">
+                    <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 px-4 py-2 rounded transition">Create Tenant</button>
+                </form>
+                <div id="tenantResult" class="mt-4"></div>
+            </div>
+
+            <div class="bg-gray-800 rounded-lg p-6 mb-6">
+                <h2 class="text-xl font-semibold mb-4">Write Document</h2>
+                <form onsubmit="writeDocument(event)" class="space-y-4">
+                    <div class="grid md:grid-cols-2 gap-4">
+                        <input type="text" id="docTenant" placeholder="Tenant ID" required class="bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-indigo-500">
+                        <input type="text" id="docCollection" placeholder="Collection Name" required class="bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-indigo-500">
+                    </div>
+                    <textarea id="docData" placeholder='JSON data (e.g., {"name":"John","role":"admin"})' required class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-indigo-500 h-24"></textarea>
+                    <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 px-4 py-2 rounded transition">Write Document</button>
+                </form>
+                <div id="writeResult" class="mt-4"></div>
+            </div>
+
+            <div class="bg-gray-800 rounded-lg p-6">
+                <h2 class="text-xl font-semibold mb-4">Read Collection</h2>
+                <form onsubmit="readCollection(event)" class="flex gap-4">
+                    <input type="text" id="readTenant" placeholder="Tenant ID" required class="flex-1 bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-indigo-500">
+                    <input type="text" id="readCollection" placeholder="Collection Name" required class="flex-1 bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white focus:outline-none focus:border-indigo-500">
+                    <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 px-4 py-2 rounded transition">Read</button>
+                </form>
+                <div id="readResult" class="mt-4"></div>
+            </div>
+        </div>
+
+        <!-- Security Tab -->
+        <div id="security" class="tab-content">
+            <div class="bg-gray-800 rounded-lg p-6 mb-6">
+                <h2 class="text-xl font-semibold mb-4">Security Attack Tests</h2>
+                <p class="text-gray-400 mb-4">Click each test to verify the gateway blocks the attack.</p>
+                
+                <div class="space-y-4">
+                    <!-- Test 1: No Auth -->
+                    <div class="border border-gray-700 rounded p-4">
+                        <div class="flex justify-between items-center mb-2">
+                            <h3 class="font-medium">No Authentication Access</h3>
+                            <span id="test1Status" class="text-sm">Not tested</span>
+                        </div>
+                        <p class="text-sm text-gray-400 mb-2">Try to access data without providing credentials</p>
+                        <button onclick="testNoAuth()" class="bg-gray-700 hover:bg-gray-600 px-3 py-1 rounded text-sm transition">Run Test</button>
+                    </div>
+
+                    <!-- Test 2: Path Traversal -->
+                    <div class="border border-gray-700 rounded p-4">
+                        <div class="flex justify-between items-center mb-2">
+                            <h3 class="font-medium">Path Traversal Attack</h3>
+                            <span id="test2Status" class="text-sm">Not tested</span>
+                        </div>
+                        <p class="text-sm text-gray-400 mb-2">Try to create tenant with path traversal characters (../../etc)</p>
+                        <button onclick="testPathTraversal()" class="bg-gray-700 hover:bg-gray-600 px-3 py-1 rounded text-sm transition">Run Test</button>
+                    </div>
+
+                    <!-- Test 3: Weak Password -->
+                    <div class="border border-gray-700 rounded p-4">
+                        <div class="flex justify-between items-center mb-2">
+                            <h3 class="font-medium">Weak Password Policy</h3>
+                            <span id="test3Status" class="text-sm">Not tested</span>
+                        </div>
+                        <p class="text-sm text-gray-400 mb-2">Try to register with weak password (123)</p>
+                        <button onclick="testWeakPassword()" class="bg-gray-700 hover:bg-gray-600 px-3 py-1 rounded text-sm transition">Run Test</button>
+                    </div>
+
+                    <!-- Test 4: Tenant Isolation -->
+                    <div class="border border-gray-700 rounded p-4">
+                        <div class="flex justify-between items-center mb-2">
+                            <h3 class="font-medium">Tenant Isolation</h3>
+                            <span id="test4Status" class="text-sm">Not tested</span>
+                        </div>
+                        <p class="text-sm text-gray-400 mb-2">Try to access another user's tenant data</p>
+                        <button onclick="testTenantIsolation()" class="bg-gray-700 hover:bg-gray-600 px-3 py-1 rounded text-sm transition">Run Test</button>
+                    </div>
+
+                    <!-- Test 5: Oversized Payload -->
+                    <div class="border border-gray-700 rounded p-4">
+                        <div class="flex justify-between items-center mb-2">
+                            <h3 class="font-medium">Oversized Payload (DoS)</h3>
+                            <span id="test5Status" class="text-sm">Not tested</span>
+                        </div>
+                        <p class="text-sm text-gray-400 mb-2">Try to send payload larger than 1MB limit</p>
+                        <button onclick="testOversizedPayload()" class="bg-gray-700 hover:bg-gray-600 px-3 py-1 rounded text-sm transition">Run Test</button>
+                    </div>
+
+                    <!-- Test 6: Rate Limiting -->
+                    <div class="border border-gray-700 rounded p-4">
+                        <div class="flex justify-between items-center mb-2">
+                            <h3 class="font-medium">Rate Limiting</h3>
+                            <span id="test6Status" class="text-sm">Not tested</span>
+                        </div>
+                        <p class="text-sm text-gray-400 mb-2">Send rapid requests to trigger rate limit</p>
+                        <button onclick="testRateLimit()" class="bg-gray-700 hover:bg-gray-600 px-3 py-1 rounded text-sm transition">Run Test</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Security Headers Check -->
+            <div class="bg-gray-800 rounded-lg p-6">
+                <h2 class="text-xl font-semibold mb-4">Security Headers Check</h2>
+                <button onclick="checkSecurityHeaders()" class="bg-indigo-600 hover:bg-indigo-700 px-4 py-2 rounded transition">Check Headers</button>
+                <div id="headersResult" class="mt-4"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:5000/api/v1';
+        let currentToken = null;
+        let currentUser = null;
+
+        // Tab Navigation
+        function showTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.nav-tab').forEach(tab => tab.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            document.querySelector(`[data-tab="${tabId}"]`).classList.add('active');
+        }
+
+        // API Helper
+        async function apiCall(endpoint, options = {}) {
+            const headers = { 'Content-Type': 'application/json', ...options.headers };
+            if (currentToken) {
+                headers['Authorization'] = `Bearer ${currentToken}`;
+            }
+            const response = await fetch(`${API_BASE}${endpoint}`, { ...options, headers });
+            const data = await response.json().catch(() => ({}));
+            return { status: response.status, data };
+        }
+
+        // Connection Status
+        async function checkConnection() {
+            try {
+                const response = await fetch(`${API_BASE}/../`);
+                const data = await response.json();
+                document.getElementById('connectionStatus').innerHTML = `
+                    <span class="w-3 h-3 rounded-full bg-green-500"></span>
+                    <span class="text-sm text-green-400">Connected</span>
+                `;
+                document.getElementById('gatewayInfo').innerHTML = `
+                    <p><strong>Service:</strong> ${data.service}</p>
+                    <p><strong>Version:</strong> ${data.version}</p>
+                    <p><strong>Authentication:</strong> ${data.security?.authentication}</p>
+                    <p><strong>Authorization:</strong> ${data.security?.authorization}</p>
+                    <p><strong>Rate Limiting:</strong> ${data.security?.rate_limiting}</p>
+                    <p><strong>Audit Logging:</strong> ${data.security?.audit_logging}</p>
+                `;
+            } catch (e) {
+                document.getElementById('connectionStatus').innerHTML = `
+                    <span class="w-3 h-3 rounded-full bg-red-500"></span>
+                    <span class="text-sm text-red-400">Disconnected</span>
+                `;
+                document.getElementById('gatewayInfo').innerHTML = '<p class="text-red-400">Cannot connect to gateway. Ensure it is running on port 5000.</p>';
+            }
+        }
+
+        // Health Check
+        async function checkHealth() {
+            const result = await apiCall('/health');
+            const div = document.getElementById('healthResult');
+            if (result.status === 200) {
+                div.innerHTML = `<div class="text-green-400">✓ Healthy - Engine: ${result.data.diamdb_engine}</div>`;
+            } else {
+                div.innerHTML = `<div class="text-red-400">✗ Health check failed</div>`;
+            }
+        }
+
+        // Register
+        async function register(e) {
+            e.preventDefault();
+            const email = document.getElementById('regEmail').value;
+            const password = document.getElementById('regPassword').value;
+            const result = await apiCall('/auth/register', {
+                method: 'POST',
+                body: JSON.stringify({ email, password })
+            });
+            const div = document.getElementById('registerResult');
+            if (result.status === 201) {
+                div.innerHTML = `<div class="text-green-400">✓ Registered successfully</div>
+                    <div class="text-sm text-gray-400 mt-2">API Key: <code class="bg-gray-700 px-2 py-1 rounded">${result.data.api_key}</code></div>
+                    <div class="text-sm text-yellow-400 mt-1">${result.data.warning}</div>`;
+            } else {
+                div.innerHTML = `<div class="text-red-400">✗ ${result.data.error}</div>`;
+            }
+        }
+
+        // Login
+        async function login(e) {
+            e.preventDefault();
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+            const result = await apiCall('/auth/login', {
+                method: 'POST',
+                body: JSON.stringify({ email, password })
+            });
+            const div = document.getElementById('loginResult');
+            if (result.status === 200) {
+                currentToken = result.data.access_token;
+                currentUser = email;
+                localStorage.setItem('token', currentToken);
+                localStorage.setItem('user', email);
+                updateSessionInfo();
+                div.innerHTML = `<div class="text-green-400">✓ Logged in successfully</div>`;
+            } else {
+                div.innerHTML = `<div class="text-red-400">✗ ${result.data.error}</div>`;
+            }
+        }
+
+        // Logout
+        function logout() {
+            currentToken = null;
+            currentUser = null;
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            updateSessionInfo();
+        }
+
+        // Update Session Info
+        function updateSessionInfo() {
+            const div = document.getElementById('sessionInfo');
+            if (currentUser) {
+                div.innerHTML = `<p><strong>User:</strong> ${currentUser}</p>
+                    <p><strong>Token:</strong> ${currentToken ? 'Set' : 'Not set'}</p>`;
+            } else {
+                div.innerHTML = '<p>No active session</p>';
+            }
+        }
+
+        // Create Tenant
+        async function createTenant(e) {
+            e.preventDefault();
+            const tenantId = document.getElementById('tenantId').value;
+            const result = await apiCall('/tenants', {
+                method: 'POST',
+                body: JSON.stringify({ tenant_id: tenantId })
+            });
+            const div = document.getElementById('tenantResult');
+            if (result.status === 201) {
+                div.innerHTML = `<div class="text-green-400">✓ ${result.data.message}</div>`;
+            } else {
+                div.innerHTML = `<div class="text-red-400">✗ ${result.data.error}</div>`;
+            }
+        }
+
+        // Write Document
+        async function writeDocument(e) {
+            e.preventDefault();
+            const tenant = document.getElementById('docTenant').value;
+            const collection = document.getElementById('docCollection').value;
+            const dataStr = document.getElementById('docData').value;
+            let data;
+            try {
+                data = JSON.parse(dataStr);
+            } catch {
+                document.getElementById('writeResult').innerHTML = '<div class="text-red-400">✗ Invalid JSON</div>';
+                return;
+            }
+            const result = await apiCall(`/${tenant}/collection/${collection}`, {
+                method: 'POST',
+                body: JSON.stringify(data)
+            });
+            const div = document.getElementById('writeResult');
+            if (result.status === 201) {
+                div.innerHTML = `<div class="text-green-400">✓ ${result.data.message}</div>`;
+            } else {
+                div.innerHTML = `<div class="text-red-400">✗ ${result.data.error}</div>`;
+            }
+        }
+
+        // Read Collection
+        async function readCollection(e) {
+            e.preventDefault();
+            const tenant = document.getElementById('readTenant').value;
+            const collection = document.getElementById('readCollection').value;
+            const result = await apiCall(`/${tenant}/collection/${collection}`);
+            const div = document.getElementById('readResult');
+            if (result.status === 200) {
+                div.innerHTML = `<div class="text-green-400">✓ Collection data:</div>
+                    <pre class="bg-gray-900 p-4 rounded mt-2 text-sm overflow-auto max-h-64">${JSON.stringify(result.data, null, 2)}</pre>`;
+            } else {
+                div.innerHTML = `<div class="text-red-400">✗ ${result.data.error}</div>`;
+            }
+        }
+
+        // Security Tests
+        async function testNoAuth() {
+            const status = document.getElementById('test1Status');
+            status.textContent = 'Testing...';
+            try {
+                const response = await fetch(`${API_BASE}/test_tenant/collection/test`);
+                if (response.status === 401) {
+                    status.innerHTML = '<span class="status-pass">✓ BLOCKED (401)</span>';
+                } else {
+                    status.innerHTML = `<span class="status-fail">✗ NOT BLOCKED (${response.status})</span>`;
+                }
+            } catch (e) {
+                status.innerHTML = '<span class="status-fail">✗ ERROR</span>';
+            }
+        }
+
+        async function testPathTraversal() {
+            const status = document.getElementById('test2Status');
+            status.textContent = 'Testing...';
+            const result = await apiCall('/tenants', {
+                method: 'POST',
+                body: JSON.stringify({ tenant_id: '../../etc' })
+            });
+            if (result.status === 400) {
+                status.innerHTML = '<span class="status-pass">✓ BLOCKED (400)</span>';
+            } else {
+                status.innerHTML = `<span class="status-fail">✗ NOT BLOCKED (${result.status})</span>`;
+            }
+        }
+
+        async function testWeakPassword() {
+            const status = document.getElementById('test3Status');
+            status.textContent = 'Testing...';
+            const result = await apiCall('/auth/register', {
+                method: 'POST',
+                body: JSON.stringify({ email: `weak${Date.now()}@test.com`, password: '123' })
+            });
+            if (result.status === 400 && result.data.error.includes('12 characters')) {
+                status.innerHTML = '<span class="status-pass">✓ BLOCKED (400)</span>';
+            } else {
+                status.innerHTML = `<span class="status-fail">✗ NOT BLOCKED (${result.status})</span>`;
+            }
+        }
+
+        async function testTenantIsolation() {
+            const status = document.getElementById('test4Status');
+            status.textContent = 'Testing...';
+            // First register a new user
+            const email = `hacker${Date.now()}@evil.com`;
+            await apiCall('/auth/register', {
+                method: 'POST',
+                body: JSON.stringify({ email, password: 'Str0ngP@ss123!' })
+            });
+            // Login as hacker
+            const loginResult = await apiCall('/auth/login', {
+                method: 'POST',
+                body: JSON.stringify({ email, password: 'Str0ngP@ss123!' })
+            });
+            if (loginResult.status !== 200) {
+                status.innerHTML = '<span class="status-fail">✗ Could not create test user</span>';
+                return;
+            }
+            const hackerToken = loginResult.data.access_token;
+            // Try to access diamsystems tenant (should fail if tenant exists and user has no access)
+            const response = await fetch(`${API_BASE}/diamsystems/collection/test`, {
+                headers: { 'Authorization': `Bearer ${hackerToken}` }
+            });
+            if (response.status === 403) {
+                status.innerHTML = '<span class="status-pass">✓ BLOCKED (403)</span>';
+            } else if (response.status === 404) {
+                status.innerHTML = '<span class="text-yellow-400">⚠ Tenant not found (create diamsystems tenant first)</span>';
+            } else {
+                status.innerHTML = `<span class="status-fail">✗ NOT BLOCKED (${response.status})</span>`;
+            }
+        }
+
+        async function testOversizedPayload() {
+            const status = document.getElementById('test5Status');
+            status.textContent = 'Testing...';
+            const largeData = { data: 'x'.repeat(2 * 1024 * 1024) }; // 2MB
+            const result = await apiCall('/tenants', {
+                method: 'POST',
+                body: JSON.stringify({ tenant_id: 'test', ...largeData })
+            });
+            if (result.status === 413) {
+                status.innerHTML = '<span class="status-pass">✓ BLOCKED (413)</span>';
+            } else {
+                status.innerHTML = `<span class="status-fail">✗ NOT BLOCKED (${result.status})</span>`;
+            }
+        }
+
+        async function testRateLimit() {
+            const status = document.getElementById('test6Status');
+            status.textContent = 'Testing...';
+            let blocked = false;
+            for (let i = 0; i < 15; i++) {
+                const result = await apiCall('/auth/login', {
+                    method: 'POST',
+                    body: JSON.stringify({ email: `test${i}@test.com`, password: 'Str0ngP@ss123!' })
+                });
+                if (result.status === 429) {
+                    blocked = true;
+                    break;
+                }
+            }
+            if (blocked) {
+                status.innerHTML = '<span class="status-pass">✓ BLOCKED (429)</span>';
+            } else {
+                status.innerHTML = '<span class="text-yellow-400">⚠ Not triggered (may need more requests)</span>';
+            }
+        }
+
+        async function checkSecurityHeaders() {
+            const response = await fetch(`${API_BASE}/health`);
+            const div = document.getElementById('headersResult');
+            const headers = {
+                'X-Content-Type-Options': response.headers.get('X-Content-Type-Options'),
+                'X-Frame-Options': response.headers.get('X-Frame-Options'),
+                'Strict-Transport-Security': response.headers.get('Strict-Transport-Security'),
+                'Content-Security-Policy': response.headers.get('Content-Security-Policy'),
+                'X-XSS-Protection': response.headers.get('X-XSS-Protection'),
+                'X-Request-Id': response.headers.get('X-Request-Id'),
+            };
+            let html = '<div class="space-y-2">';
+            for (const [key, value] of Object.entries(headers)) {
+                const status = value ? 'text-green-400' : 'text-red-400';
+                const icon = value ? '✓' : '✗';
+                html += `<div class="${status}">${icon} ${key}: ${value || 'Missing'}</div>`;
+            }
+            html += '</div>';
+            div.innerHTML = html;
+        }
+
+        // Initialize
+        checkConnection();
+        const savedToken = localStorage.getItem('token');
+        const savedUser = localStorage.getItem('user');
+        if (savedToken && savedUser) {
+            currentToken = savedToken;
+            currentUser = savedUser;
+            updateSessionInfo();
+        }
+    </script>
+</body>
+</html>
